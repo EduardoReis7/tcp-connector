@@ -7,9 +7,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
-import java.net.HttpURLConnection;
 import java.net.InetAddress;
-import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URL;
 import java.util.Scanner;
@@ -20,7 +18,7 @@ public class TcpConnectorMain {
 
         Scanner scanner = new Scanner(System.in);
 
-        System.out.println("Digite a url: ");
+        System.out.print("Digite a url: ");
         String url = scanner.next();
 
         URL urlObj = new URL(url);
@@ -31,9 +29,11 @@ public class TcpConnectorMain {
         String ip = ia.getHostAddress();
         System.out.println(ip + " é o ip do site " + hostname);
         String path = urlObj.getPath();
-        System.out.println("Requested Path on the server: " + path);
+        String validaRota = path.equals("") ? "/" : path;
+        System.out.println("Rota solicitada: " + validaRota);
 
         if (urlObj.getProtocol().equals("https")) {
+
             SocketFactory socketFactory = SSLSocketFactory.getDefault();
             SSLSocket sslSocket = (SSLSocket) socketFactory.createSocket(ip, 443);
 
@@ -42,43 +42,15 @@ public class TcpConnectorMain {
             BufferedReader in = new BufferedReader(new InputStreamReader(sslSocket.getInputStream()));
 
             // Monta a requisição
-            out.println("GET / HTTP/1.0");
+            out.println("GET " + validaRota + " HTTP/1.0");
             out.println("Host: " + hostname);
 
             // Monta os cabeçalhos
-            out.println("User-Agent: Java/13.0.2");
-            out.println("Accept-Language: en-us");
+            out.println("User-Agent: Java/11.0.12");
             out.println("Accept: */*");
             out.println("Connection: keep-alive");
-            out.println("Accept-Encoding: gzip, deflate, br");
 
-            String line = in.readLine();
-            while (line != null) {
-                System.out.println(line);
-                line = in.readLine();
-            }
-            // Close our streams
-            in.close();
-            out.close();
-            sslSocket.close();
-
-        } else {
-            Socket socket = new Socket(ip, 80);
-
-            // Create input and output streams to read from and write to the server
-            PrintStream out = new PrintStream(socket.getOutputStream());
-            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-
-            //Request Line
-            out.println("GET / HTTP/1.0");
-            out.println("Host: " + hostname);
-            //Header Lines
-            out.println("User-Agent: Java/13.0.2");
-            out.println("Accept-Language: en-us");
-            out.println("Accept: */*");
-            out.println("Connection: keep-alive");
-            out.println("Accept-Encoding: gzip, deflate, br");
-            // Blank Line
+            // Pula linha
             out.println();
 
             String line = in.readLine();
@@ -86,7 +58,40 @@ public class TcpConnectorMain {
                 System.out.println(line);
                 line = in.readLine();
             }
-            // Close our streams
+
+            // Fechamento do streaming de dados
+            System.out.println("Iniciando fechamento das conexões.");
+            in.close();
+            out.close();
+            sslSocket.close();
+
+        } else {
+            Socket socket = new Socket(ip, 80);
+
+            // Cria as entradas e saídas para trocar informações com o servidor
+            PrintStream out = new PrintStream(socket.getOutputStream());
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+            // Monta a requisição
+            out.println("GET " + validaRota + " HTTP/1.0");
+            out.println("Host: " + hostname);
+
+            // Monta os cabeçalhos
+            out.println("User-Agent: Java/11.0.12");
+            out.println("Accept: */*");
+            out.println("Connection: keep-alive");
+
+            // Pula linha
+            out.println();
+
+            String line = in.readLine();
+            while (line != null) {
+                System.out.println(line);
+                line = in.readLine();
+            }
+
+            // Fechamento do streaming de dados
+            System.out.println("Iniciando fechamento das conexões.");
             in.close();
             out.close();
             socket.close();
